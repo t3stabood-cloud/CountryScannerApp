@@ -2,7 +2,6 @@ package com.countryscanner.app.domain
 
 import com.countryscanner.app.data.model.ScanResult
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.channelFlow
@@ -23,13 +22,13 @@ class ScanEngine(
                 ports.forEach { port ->
                     launch(Dispatchers.IO) {
                         semaphore.withPermit {
-                            trySend(probe(ip, port))
+                            send(probe(ip, port))
                         }
                     }
                 }
             }
         }
-        awaitClose { }
+        // Channel closes when coroutineScope above finishes — collect() will terminate.
     }
 
     private fun probe(ip: String, port: Int): ScanResult {
