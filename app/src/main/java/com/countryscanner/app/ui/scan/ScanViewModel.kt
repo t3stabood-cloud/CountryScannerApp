@@ -34,7 +34,8 @@ data class ScanUiState(
     val results: List<ScanResult> = emptyList(),
     val groupBy: GroupBy = GroupBy.PORT,
     val error: String? = null,
-    val exportMessage: String? = null
+    val exportMessage: String? = null,
+    val showIpsOnly: Boolean = false
 )
 
 class ScanViewModel(
@@ -72,6 +73,10 @@ class ScanViewModel(
         _state.update { it.copy(groupBy = group) }
     }
 
+    fun toggleIpsOnly(enabled: Boolean) {
+        _state.update { it.copy(showIpsOnly = enabled) }
+    }
+
     fun clearResults() {
         _state.update { it.copy(results = emptyList(), progress = 0f, logs = emptyList(), exportMessage = null) }
     }
@@ -103,9 +108,15 @@ class ScanViewModel(
                 val file = File(dir, filename)
 
                 file.bufferedWriter().use { writer ->
-                    writer.write("IP Address,Port,Latency(ms),Organization\n")
-                    currentResults.filter { it.isOpen }.forEach { r ->
-                        writer.write("${r.ip},${r.port},${r.latencyMs ?: 0},${r.organization ?: "Unknown"}\n")
+                    if (_state.value.showIpsOnly) {
+                        currentResults.filter { it.isOpen }.map { it.ip }.distinct().forEach { ip ->
+                            writer.write("$ip\n")
+                        }
+                    } else {
+                        writer.write("IP Address,Port,Latency(ms),Organization\n")
+                        currentResults.filter { it.isOpen }.forEach { r ->
+                            writer.write("${r.ip},${r.port},${r.latencyMs ?: 0},${r.organization ?: "Unknown"}\n")
+                        }
                     }
                 }
 

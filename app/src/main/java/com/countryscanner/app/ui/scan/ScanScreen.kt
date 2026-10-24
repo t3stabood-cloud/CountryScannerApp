@@ -186,20 +186,27 @@ fun ScanScreen(vm: ScanViewModel = viewModel()) {
                 )
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = androidx.compose.ui.Alignment.CenterVertically) {
                 FilterChip(
-                    selected = state.groupBy == GroupBy.PORT,
-                    onClick = { vm.setGroupBy(GroupBy.PORT) },
-                    label = { Text("By Port") }
+                    selected = state.showIpsOnly,
+                    onClick = { vm.toggleIpsOnly(!state.showIpsOnly) },
+                    label = { Text("IPs Only") }
                 )
-                FilterChip(
-                    selected = state.groupBy == GroupBy.ORGANIZATION,
-                    onClick = { vm.setGroupBy(GroupBy.ORGANIZATION) },
-                    label = { Text("By Organization") }
-                )
+                if (!state.showIpsOnly) {
+                    FilterChip(
+                        selected = state.groupBy == GroupBy.PORT,
+                        onClick = { vm.setGroupBy(GroupBy.PORT) },
+                        label = { Text("By Port") }
+                    )
+                    FilterChip(
+                        selected = state.groupBy == GroupBy.ORGANIZATION,
+                        onClick = { vm.setGroupBy(GroupBy.ORGANIZATION) },
+                        label = { Text("By Organization") }
+                    )
+                }
                 Spacer(Modifier.weight(1f))
                 Text(
-                    "${state.results.size} found",
+                    "${if (state.showIpsOnly) state.results.filter { it.isOpen }.map { it.ip }.distinct().size else state.results.size} found",
                     style = MaterialTheme.typography.labelMedium
                 )
             }
@@ -213,6 +220,11 @@ fun ScanScreen(vm: ScanViewModel = viewModel()) {
                         Text("No results yet",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                } else if (state.showIpsOnly) {
+                    val uniqueIps = state.results.filter { it.isOpen }.map { it.ip }.distinct()
+                    items(uniqueIps) { ip ->
+                        IpOnlyCard(ip)
                     }
                 } else if (state.groupBy == GroupBy.PORT) {
                     val grouped = state.results.filter { it.isOpen }.groupBy { it.port }.toSortedMap()
@@ -243,6 +255,15 @@ fun ScanScreen(vm: ScanViewModel = viewModel()) {
             onSelect = { code -> vm.onCountrySelected(code); showCountryDialog = false },
             onDismiss = { showCountryDialog = false }
         )
+    }
+}
+
+@Composable
+private fun IpOnlyCard(ip: String) {
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(12.dp)) {
+            Text(ip, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+        }
     }
 }
 
